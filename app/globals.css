@@ -1,26 +1,528 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Class-free dark variant driven by <html data-theme="dark"> */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --bg-alt: #f6f8fb;
+  --hero-from: #f2f6fd;
+  --hero-to: #ffffff;
+  --card: #ffffff;
+  --muted-card: #f4f6fa;
+  --border: #e4e8ef;
+  --hero-grid: #a8b6cb; /* hero background grid lines (drawn at 50% opacity) */
+  --border-strong: #d5dbe5;
+  --fg: #0f172a;
+  --fg-soft: #334155;
+  --muted: #5b6678;
+  --faint: #8792a5;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-soft: #e3ecfc;
+  --accent-fg: #ffffff;
+  --chip: #eef2f8;
+  --chip-fg: #334155;
+  --ink: #111a2e; /* dark surfaces: CTA footer, nav button, thumbs */
+  --ink-fg: #ffffff;
+  --art-card: #dbe7fb;
+  --shadow: 15 23 42;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a0f1c;
+  --bg-alt: #0d1424;
+  --hero-from: #0e1730;
+  --hero-to: #0a0f1c;
+  --card: #111a2c;
+  --muted-card: #142036;
+  --border: #1e2a40;
+  --hero-grid: var(--border); /* unchanged from the original grid */
+  --border-strong: #2a3852;
+  --fg: #e7ecf4;
+  --fg-soft: #c3ccda;
+  --muted: #94a0b4;
+  --faint: #6b778c;
+  --accent: #4f8cff;
+  --accent-hover: #6d9fff;
+  --accent-soft: #16264a;
+  --accent-fg: #ffffff;
+  --chip: #18233a;
+  --chip-fg: #c3ccda;
+  --ink: #050913;
+  --ink-fg: #e7ecf4;
+  --art-card: #172a52;
+  --shadow: 0 0 0;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-bg-alt: var(--bg-alt);
+  --color-card: var(--card);
+  --color-muted-card: var(--muted-card);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-soft: var(--fg-soft);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+  --color-chip: var(--chip);
+  --color-chip-fg: var(--chip-fg);
+  --color-ink: var(--ink);
+  --color-ink-fg: var(--ink-fg);
+  --color-art-card: var(--art-card);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-grotesk), var(--font-inter), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+    -webkit-text-size-adjust: 100%;
+    /* Keep the scrollbar's space when a modal locks scrolling, so nothing shifts sideways. */
+    scrollbar-gutter: stable;
+  }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    /* clip, not hidden: hidden turns <body> into a scroll container once a modal
+       sets overflow:hidden on <html>, which breaks position:sticky (the sidebar jumps). */
+    overflow-x: clip;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--accent) 25%, transparent);
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 6px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Soft, tinted shadows that disappear gracefully in dark mode */
+@utility shadow-card {
+  box-shadow:
+    0 1px 2px rgb(var(--shadow) / 0.04),
+    0 8px 24px -12px rgb(var(--shadow) / 0.12);
+}
+@utility shadow-lift {
+  box-shadow:
+    0 2px 4px rgb(var(--shadow) / 0.05),
+    0 22px 40px -18px rgb(var(--shadow) / 0.22);
+}
+
+/* Theme switch: crossfade colors only while toggling, never on load */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition:
+    background-color 260ms ease,
+    border-color 260ms ease,
+    color 200ms ease,
+    fill 200ms ease !important;
+}
+
+/* Theme switch (View Transitions): the new theme blooms out of the toggle as
+   a soft-edged circle while the old page dims behind it.
+   theme-toggle.tsx sets --vt-x / --vt-y (button center) and --vt-r (radius
+   needed to cover the viewport). */
+html.theme-reveal::view-transition-old(root),
+html.theme-reveal::view-transition-new(root) {
+  mix-blend-mode: normal;
+}
+html.theme-reveal::view-transition-old(root) {
+  z-index: 1;
+  animation: theme-sink 900ms cubic-bezier(0.65, 0, 0.25, 1) both;
+}
+html.theme-reveal::view-transition-new(root) {
+  z-index: 2;
+  mask-image: radial-gradient(closest-side, #000 90%, transparent 100%);
+  mask-repeat: no-repeat;
+  animation: theme-bloom 900ms cubic-bezier(0.65, 0, 0.25, 1) both;
+}
+@keyframes theme-bloom {
+  from {
+    mask-size: 0 0;
+    mask-position: var(--vt-x) var(--vt-y);
+  }
+  to {
+    mask-size: calc(var(--vt-r) * 2) calc(var(--vt-r) * 2);
+    mask-position: calc(var(--vt-x) - var(--vt-r)) calc(var(--vt-y) - var(--vt-r));
+  }
+}
+/* No transform here: the old snapshot must stay aligned with the new page,
+   or content ghosts through the circle's soft edge. Depth comes from dimming. */
+@keyframes theme-sink {
+  to {
+    filter: brightness(0.7) saturate(0.8);
+  }
+}
+/* The new page is live during the reveal: freeze CSS transitions so elements
+   don't fade from their old colors inside the circle (the toggle's own
+   sun/moon swap is exempt). */
+html.theme-reveal *:not([data-theme-toggle], [data-theme-toggle] *),
+html.theme-reveal *:not([data-theme-toggle] *)::before,
+html.theme-reveal *:not([data-theme-toggle] *)::after {
+  transition: none !important;
+}
+
+/* Loading skeletons: a soft highlight sweeping across a muted block */
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+@utility skeleton {
+  background-color: var(--chip);
+  background-image: linear-gradient(
+    100deg,
+    transparent 30%,
+    color-mix(in oklab, var(--card) 70%, transparent) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+/* Admin modals (native <dialog>): fade/scale in, drawers slide from the left */
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+.admin-dialog[open] {
+  animation: dialog-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+@media (max-width: 639.98px) {
+  .admin-sheet[open] {
+    animation: sheet-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+.admin-drawer[open] {
+  animation: drawer-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.admin-dialog[open]::backdrop {
+  animation: backdrop-in 180ms ease;
+}
+
+/* Closing: the same motions in reverse, held at the end until unmount. */
+@keyframes dialog-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+@keyframes drawer-out {
+  to {
+    transform: translateX(-100%);
+  }
+}
+@keyframes sheet-out {
+  to {
+    transform: translateY(100%);
+  }
+}
+@keyframes backdrop-out {
+  to {
+    opacity: 0;
+  }
+}
+.admin-dialog[open][data-closing] {
+  pointer-events: none;
+  animation: dialog-out 160ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+@media (max-width: 639.98px) {
+  .admin-sheet[open][data-closing] {
+    animation: sheet-out 220ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  }
+}
+.admin-drawer[open][data-closing] {
+  animation: drawer-out 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+.admin-dialog[open][data-closing]::backdrop {
+  animation: backdrop-out 180ms ease forwards;
+}
+
+/* Admin page enter: the same fade-up as the portfolio's <Reveal>, replayed on
+   every route change (the wrapper is keyed by pathname). Each top-level block
+   of the page follows the one before it by a beat. */
+@keyframes admin-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes admin-fade {
+  from {
+    opacity: 0;
+  }
+}
+.admin-page > * > * {
+  animation: admin-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.admin-page > * > :nth-child(2) { animation-delay: 70ms; }
+.admin-page > * > :nth-child(3) { animation-delay: 140ms; }
+.admin-page > * > :nth-child(4) { animation-delay: 210ms; }
+.admin-page > * > :nth-child(n + 5) { animation-delay: 260ms; }
+
+/* One-off entrance for elements outside the admin page wrapper (login). */
+.admin-rise {
+  animation: admin-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Row action dropdown: a quick fade and scale from the corner by its button. */
+@keyframes admin-menu-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+.admin-menu {
+  animation: admin-menu-in 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-menu {
+    animation: none;
+  }
+}
+
+/* Rows inside a list card trail in after the card itself. */
+.admin-rows > * {
+  animation: admin-fade 0.5s ease both;
+  animation-delay: calc(180ms + var(--i, 0) * 40ms);
+}
+
+/* Hero art card: a short streak of light that travels around the card's edge.
+   The conic gradient spins via a registered custom property, and the mask
+   punches out the middle so only a thin ring (the padding) shows. A second
+   ring inside .edge-glow is blurred for a soft halo (the blur sits on the
+   wrapper so it applies after the mask, not before). */
+@property --edge-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes edge-spin {
+  to {
+    --edge-angle: 360deg;
+  }
+}
+.edge-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  filter: blur(6px);
+  opacity: 0.9;
+  pointer-events: none;
+}
+.edge-glow > .edge-light {
+  padding: 3px;
+}
+.edge-light {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--edge-angle),
+    transparent 0deg,
+    transparent 250deg,
+    color-mix(in oklab, var(--accent) 60%, transparent) 300deg,
+    color-mix(in oklab, var(--accent) 40%, white) 345deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  animation: edge-spin 6s linear infinite;
+  pointer-events: none;
+}
+
+/* Hero grid pulses: short streaks of light travelling along the background
+   grid lines. Each beam is a track snapped to the 44px grid (anchored around
+   the grid's bright spot at 75% / 45%) with a streak sliding through.
+
+   Colour: --beam-hue steps to a new hue once per pass. Its animation runs on
+   the track with the same duration x 6 and steps(6), so each step lasts
+   exactly one pass and flips while the streak is off-screen. */
+@property --beam-hue {
+  syntax: "<number>";
+  initial-value: 250;
+  inherits: true;
+}
+@keyframes grid-beam-hue {
+  from { --beam-hue: 250; }
+  to { --beam-hue: 610; }
+}
+.grid-beam-v,
+.grid-beam-h {
+  /* light mode: deeper colour, colour-matched tip */
+  --beam-l: 0.58;
+  --beam-c: 0.22;
+  --beam-w: 1px;
+  --beam: oklch(var(--beam-l) var(--beam-c) var(--beam-hue));
+  --beam-tip: oklch(calc(var(--beam-l) - 0.06) var(--beam-c) var(--beam-hue));
+  position: absolute;
+  overflow: hidden;
+  filter: drop-shadow(0 0 1.5px var(--beam)) drop-shadow(0 0 3px var(--beam));
+  animation: grid-beam-hue calc(var(--dur) * 6) steps(6) var(--delay) infinite;
+}
+[data-theme="dark"] .grid-beam-v,
+[data-theme="dark"] .grid-beam-h {
+  --beam-l: 0.74;
+  --beam-c: 0.17;
+  --beam-w: 1px;
+  --beam-tip: white;
+}
+/* The track is 4px wider than the line on each side so the glow isn't
+   clipped; the streak itself stays on the line. */
+.grid-beam-v {
+  top: 0;
+  bottom: 0;
+  width: 9px;
+  left: calc(round(down, 75%, 44px) + var(--n) * 44px - 4px);
+}
+.grid-beam-h {
+  left: 0;
+  right: 0;
+  height: 9px;
+  top: calc(round(down, 45%, 44px) + var(--n) * 44px - 4px);
+}
+.grid-beam-v::before,
+.grid-beam-h::before {
+  content: "";
+  position: absolute;
+  animation: var(--dur) linear var(--delay) infinite;
+}
+.grid-beam-v::before {
+  left: 4px;
+  width: var(--beam-w);
+  top: 0;
+  height: 22%;
+  background: linear-gradient(to bottom, transparent, var(--beam) 80%, var(--beam-tip));
+  animation-name: grid-beam-down;
+}
+.grid-beam-h::before {
+  top: 4px;
+  height: var(--beam-w);
+  left: 0;
+  width: 16%;
+  background: linear-gradient(to right, transparent, var(--beam) 80%, var(--beam-tip));
+  animation-name: grid-beam-right;
+}
+/* Travel takes the first 60% of each cycle; the rest is a pause off-screen. */
+@keyframes grid-beam-down {
+  0% { transform: translateY(-100%); }
+  60%, 100% { transform: translateY(455%); }
+}
+@keyframes grid-beam-right {
+  0% { transform: translateX(-100%); }
+  60%, 100% { transform: translateX(625%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edge-light {
+    animation: none;
+  }
+  .grid-beam-v,
+  .grid-beam-h {
+    display: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+  .skeleton,
+  .admin-dialog[open],
+  .admin-sheet[open],
+  .admin-dialog[open]::backdrop,
+  .admin-dialog[open][data-closing],
+  .admin-sheet[open][data-closing],
+  .admin-drawer[open][data-closing],
+  .admin-dialog[open][data-closing]::backdrop,
+  .admin-page > * > *,
+  .admin-rise,
+  .admin-rows > * {
+    animation: none;
+  }
+}
+
+/* Carousel autoplay: the active pill fills over one slide's duration */
+@keyframes carousel-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Hero entrance. Plain CSS (not motion) so it runs from the first paint of the
+   server HTML rather than after hydration: the headline and art are the LCP. */
+@keyframes hero-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+@keyframes hero-line {
+  from {
+    transform: translateY(105%);
+  }
+}
+@keyframes hero-art {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+}
+.hero-up {
+  animation: hero-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.hero-line {
+  animation: hero-line 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.hero-art {
+  animation: hero-art 1s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-up,
+  .hero-line,
+  .hero-art {
+    animation: none;
+  }
 }
