@@ -33,6 +33,10 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: { card: "summary_large_image", title, description },
     robots: { index: true, follow: true, "max-image-preview": "large" },
     formatDetection: { email: false, telephone: false, address: false },
+    // Google Search Console "HTML tag" verification; set the token in Vercel.
+    verification: process.env.GOOGLE_SITE_VERIFICATION
+      ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+      : undefined,
   };
 }
 
