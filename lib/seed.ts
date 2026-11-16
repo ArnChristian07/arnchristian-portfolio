@@ -65,5 +65,5 @@ export const starterContent: Content = {
   posts: [],
   blog: { photo: "" },
   contact: { email: "", github: "", linkedin: "", resume: "" },
-  site: { domain: "arnchristian.dev", accent: "#2563eb", hidden: [] },
+  site: { domain: "arnchristian-portfolio.vercel.app", accent: "#2563eb", hidden: [] },
 };

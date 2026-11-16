@@ -14,12 +14,12 @@ export const FALLBACK_DESCRIPTION =
  * the admin.
  */
 export function siteUrl(c: Content): string {
-  const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim() || c.site.domain.trim() || "arnchristian.dev";
+  const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim() || c.site.domain.trim() || "arnchristian-portfolio.vercel.app";
   const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
   try {
     return new URL(withProtocol).origin;
   } catch {
-    return "https://arnchristian.dev";
+    return "https://arnchristian-portfolio.vercel.app";
   }
 }
 

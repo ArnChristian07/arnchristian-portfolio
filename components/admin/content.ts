@@ -60,7 +60,7 @@ export const emptyContent: Content = {
   posts: [],
   blog: { photo: "" },
   contact: { email: "", github: "", linkedin: "", resume: "" },
-  site: { domain: "arnchristian.dev", accent: DEFAULT_ACCENT, hidden: [] },
+  site: { domain: "arnchristian-portfolio.vercel.app", accent: DEFAULT_ACCENT, hidden: [] },
 };
 
 /* ------------------------------------------------------------- normalize -- */
