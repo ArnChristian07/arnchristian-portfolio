@@ -7,6 +7,14 @@ import { countUnread } from "@/lib/messages";
 import { AdminShell } from "@/components/admin/shell";
 import { AdminSkeleton } from "@/components/skeleton";
 
+// Fail fast instead of leaving the skeleton up until the serverless function times out.
+function withTimeout<T>(p: Promise<T>, ms: number, what: string): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`${what} timed out after ${ms}ms`)), ms)),
+  ]);
+}
+
 // Second line of defence after proxy.ts: the session is verified again here.
 async function Gate({ children }: { children: ReactNode }) {
   const user = await verifySession((await cookies()).get(SESSION_COOKIE)?.value);
@@ -15,13 +23,14 @@ async function Gate({ children }: { children: ReactNode }) {
   let stored;
   let loadError: string | null = null;
   try {
-    stored = await readContent();
+    stored = await withTimeout(readContent(), 8000, "Firestore read");
   } catch (err) {
     console.error("[admin] Firestore read failed:", err);
-    loadError = "Couldn't load your content from Firestore. Check the FIREBASE_* settings, then reload.";
+    const detail = err instanceof Error ? err.message : String(err);
+    loadError = `Couldn't load your content from Firestore (${detail}). Check the FIREBASE_* environment variables, then reload.`;
   }
   // The inbox count is a nice-to-have; never block the admin on it.
-  const unread = await countUnread().catch((err) => {
+  const unread = await withTimeout(countUnread(), 4000, "Unread count").catch((err) => {
     console.error("[admin] unread count failed:", err);
     return 0;
   });

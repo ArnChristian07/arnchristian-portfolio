@@ -1,7 +1,7 @@
 import "server-only";
 import { cert, getApp, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getAuth, type Auth } from "firebase-admin/auth";
-import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { getFirestore, initializeFirestore, type Firestore } from "firebase-admin/firestore";
 
 // Firestore is only ever touched from the server with a service account, so
 // the database can keep "deny all" security rules for browsers.
@@ -30,7 +30,13 @@ export function firestore(): Firestore | null {
   if (db) return db;
   const app = adminApp();
   if (!app) return null;
-  db = getFirestore(app);
+  // REST instead of gRPC: much faster cold starts on serverless (Vercel), and
+  // no long-lived gRPC channel that can stall a frozen function.
+  try {
+    db = initializeFirestore(app, { preferRest: true });
+  } catch {
+    db = getFirestore(app); // already initialized elsewhere in this process
+  }
   return db;
 }
 
