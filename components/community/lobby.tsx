@@ -304,11 +304,21 @@ export function Lobby({ fontFamily }: { fontFamily: string }) {
       try {
         const auth = getAuth(app);
         // Returns null unless the visitor is signed in to /admin.
-        const token = await getLobbyToken().catch(() => null);
-        let cred: UserCredential | null = token ? await signInWithCustomToken(auth, token).catch(() => null) : null;
+        const res = await getLobbyToken().catch((e: unknown) => ({
+          error: `Couldn't reach the server (${e instanceof Error ? e.message : String(e)}).`,
+        }));
+        let signInError: string | null = null;
+        let cred: UserCredential | null = null;
+        if (res && "token" in res) {
+          cred = await signInWithCustomToken(auth, res.token).catch((e: unknown) => {
+            signInError = e instanceof Error ? e.message : String(e);
+            return null;
+          });
+        }
         if (cancelled) return;
         if (cred) setAsAdmin(true);
-        else if (token) setError("Couldn't verify your admin session for the lobby, so you're a guest this time.");
+        else if (res && "error" in res) setError(`Admin sign-in failed, so you're a guest this time: ${res.error}`);
+        else if (signInError) setError(`Firebase rejected the admin token, so you're a guest this time: ${signInError}`);
         cred ??= await signInAnonymously(auth);
         if (cancelled) return;
         uid.current = cred.user.uid;
