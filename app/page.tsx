@@ -1,6 +1,5 @@
 import { Suspense } from "react";
-import { Chatbot } from "@/components/chatbot";
-import { toChatData } from "@/lib/chat-data";
+import { CommunityModal } from "@/components/community/community-modal";
 import { Hero } from "@/components/hero";
 import { Nav } from "@/components/nav";
 import { MotionProvider } from "@/components/reveal";
@@ -55,7 +54,8 @@ async function Portfolio() {
         {show.contact && <Contact contact={content.contact} />}
       </main>
       <Footer contact={content.contact} name={content.profile.name} />
-      <Chatbot data={toChatData(content)} />
+      {/* Always shown; without Firebase it opens the offline preview. */}
+      <CommunityModal launcher />
     </div>
   );
 }

@@ -1,0 +1,45 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "lobby": {
+      "players": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.hasChildren(['name', 'color', 'x', 'y', 'dir', 'moving'])",
+          "name": { ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_]{2,16}$/) && (auth.token.admin === true || !newData.val().matches(/^[Aa][Nn][Kk][Uu][Rr][Ii][Ss][Uu]$/))" },
+          "admin": { ".validate": "newData.val() === true && auth.token.admin === true" },
+          "color": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7" },
+          "gender": { ".validate": "newData.isString() && newData.val().matches(/^[mf]$/)" },
+          "x": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 384" },
+          "y": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 240" },
+          "dir": { ".validate": "newData.isString() && newData.val().matches(/^[udlr]$/)" },
+          "moving": { ".validate": "newData.isBoolean()" },
+          "$other": { ".validate": false }
+        }
+      },
+      "chat": {
+        ".read": "auth != null",
+        ".indexOn": ["t"],
+        "$id": {
+          ".write": "auth != null && ((!data.exists() && newData.exists()) || (!newData.exists() && data.child('t').val() < now - 3600000))",
+          ".validate": "newData.hasChildren(['uid', 'name', 'color', 'text', 't']) && newData.parent().parent().child('rate').child(auth.uid).val() === now",
+          "uid": { ".validate": "newData.val() === auth.uid" },
+          "name": { ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_]{2,16}$/) && (auth.token.admin === true || !newData.val().matches(/^[Aa][Nn][Kk][Uu][Rr][Ii][Ss][Uu]$/))" },
+          "admin": { ".validate": "newData.val() === true && auth.token.admin === true" },
+          "color": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7" },
+          "text": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 140" },
+          "t": { ".validate": "newData.val() === now" },
+          "$other": { ".validate": false }
+        }
+      },
+      "rate": {
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.val() === now && (!data.exists() || newData.val() >= data.val() + 1500)"
+        }
+      }
+    }
+  }
+}

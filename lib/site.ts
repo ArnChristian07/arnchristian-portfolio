@@ -32,9 +32,18 @@ export function visibility(c: Content): Record<SectionId, boolean> {
   return show;
 }
 
-/** Nav links for the sections that are switched on. */
+/** The community lobby (a modal on the home page) only appears once its Firebase web config is set. */
+export const communityEnabled = Boolean(
+  process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL && process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+);
+
+/** Nav links for the sections that are switched on, plus the community lobby (opened by the #community hash). */
 export function navLinks(show: Record<SectionId, boolean>) {
-  return NAV.filter((l) => show[l.id]).map(({ anchor, label }) => ({ id: anchor, label }));
+  const links: { id: string; label: string; href?: string }[] = NAV.filter((l) => show[l.id]).map(
+    ({ anchor, label }) => ({ id: anchor, label }),
+  );
+  if (communityEnabled) links.push({ id: "community", label: "Community" });
+  return links;
 }
 
 /** The author shown on every post in the blog feed. */

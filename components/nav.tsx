@@ -6,7 +6,8 @@ import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { ThemeToggle } from "./theme-toggle";
 import { ease } from "./reveal";
 
-type NavLink = { id: string; label: string };
+/** A section on the home page, or a separate page when `href` is set. */
+type NavLink = { id: string; label: string; href?: string };
 
 function lockScroll(lock: boolean) {
   const v = lock ? "hidden" : "";
@@ -123,7 +124,7 @@ export function Nav({
           {navLinks.map((l) => (
             <li key={l.id}>
               <a
-                href={`${home}#${l.id}`}
+                href={l.href ?? `${home}#${l.id}`}
                 className={`relative block px-3 py-2 text-[13px] transition-colors ${
                   active === l.id ? "text-fg" : "text-muted hover:text-fg"
                 }`}
@@ -202,7 +203,7 @@ export function Nav({
                   transition={{ duration: 0.4, ease }}
                 >
                   <a
-                    href={`${home}#${l.id}`}
+                    href={l.href ?? `${home}#${l.id}`}
                     onClick={go(l.id)}
                     aria-current={active === l.id ? "true" : undefined}
                     className={`flex items-baseline gap-4 border-b border-border py-4 font-display text-2xl font-semibold tracking-tight transition-colors active:text-accent ${

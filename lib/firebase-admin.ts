@@ -1,5 +1,6 @@
 import "server-only";
-import { cert, getApp, getApps, initializeApp } from "firebase-admin/app";
+import { cert, getApp, getApps, initializeApp, type App } from "firebase-admin/app";
+import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
 // Firestore is only ever touched from the server with a service account, so
@@ -16,14 +17,25 @@ function credentials() {
 
 export const firebaseConfigured = () => credentials() !== null;
 
+function adminApp(): App | null {
+  const creds = credentials();
+  if (!creds) return null;
+  return getApps().length ? getApp() : initializeApp({ credential: cert(creds), projectId: creds.projectId });
+}
+
 let db: Firestore | undefined;
 
 /** Firestore client, or null when the FIREBASE_* variables aren't set. */
 export function firestore(): Firestore | null {
   if (db) return db;
-  const creds = credentials();
-  if (!creds) return null;
-  const app = getApps().length ? getApp() : initializeApp({ credential: cert(creds), projectId: creds.projectId });
+  const app = adminApp();
+  if (!app) return null;
   db = getFirestore(app);
   return db;
+}
+
+/** Firebase Auth admin client (mints the lobby's admin sign-in token), or null when not configured. */
+export function firebaseAuth(): Auth | null {
+  const app = adminApp();
+  return app ? getAuth(app) : null;
 }
