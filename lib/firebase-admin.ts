@@ -1,6 +1,6 @@
 import "server-only";
 import { cert, getApp, getApps, initializeApp, type App } from "firebase-admin/app";
-import { getAuth, type Auth } from "firebase-admin/auth";
+import type { Auth } from "firebase-admin/auth";
 import { getFirestore, initializeFirestore, type Firestore } from "firebase-admin/firestore";
 
 // Firestore is only ever touched from the server with a service account, so
@@ -41,7 +41,12 @@ export function firestore(): Firestore | null {
 }
 
 /** Firebase Auth admin client (mints the lobby's admin sign-in token), or null when not configured. */
-export function firebaseAuth(): Auth | null {
+// Loaded on demand: firebase-admin/auth pulls in jwks-rsa → jose (ESM-only), which
+// crashes on Node runtimes without require(esm). Importing it at the top made
+// every Firestore page fail on Vercel; now only the lobby token pays for it.
+export async function firebaseAuth(): Promise<Auth | null> {
   const app = adminApp();
-  return app ? getAuth(app) : null;
+  if (!app) return null;
+  const { getAuth } = await import("firebase-admin/auth");
+  return getAuth(app);
 }

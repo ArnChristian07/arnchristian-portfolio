@@ -12,9 +12,9 @@ import { firebaseAuth } from "@/lib/firebase-admin";
 export async function getLobbyToken(): Promise<string | null> {
   const user = await verifySession((await cookies()).get(SESSION_COOKIE)?.value);
   if (!user) return null;
-  const auth = firebaseAuth();
-  if (!auth) return null;
   try {
+    const auth = await firebaseAuth();
+    if (!auth) return null;
     return await auth.createCustomToken("site-admin", { admin: true });
   } catch (e) {
     console.error("Couldn't mint the lobby admin token", e);
