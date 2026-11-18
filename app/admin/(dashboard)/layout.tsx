@@ -1,5 +1,6 @@
 import { Suspense, type ReactNode } from "react";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { SESSION_COOKIE, verifySession } from "@/lib/admin-session";
 import { readContent } from "@/lib/content-store";
@@ -37,6 +38,8 @@ async function Gate({ children }: { children: ReactNode }) {
 
 // Second line of defence after proxy.ts: the session is verified again here.
 async function GateInner({ children }: { children: ReactNode }) {
+  // Request-time only: the session check reads the clock (token expiry).
+  await connection();
   const user = await verifySession((await cookies()).get(SESSION_COOKIE)?.value);
   if (!user) redirect("/admin/login");
 
