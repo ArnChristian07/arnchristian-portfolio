@@ -1,6 +1,6 @@
 import { Suspense, type ReactNode } from "react";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { SESSION_COOKIE, verifySession } from "@/lib/admin-session";
 import { readContent } from "@/lib/content-store";
 import { countUnread } from "@/lib/messages";
@@ -15,8 +15,28 @@ function withTimeout<T>(p: Promise<T>, ms: number, what: string): Promise<T> {
   ]);
 }
 
-// Second line of defence after proxy.ts: the session is verified again here.
+// Production hides server error messages from the browser, so any unexpected
+// failure here is rendered as text instead of leaving the skeleton up forever.
 async function Gate({ children }: { children: ReactNode }) {
+  try {
+    return await GateInner({ children });
+  } catch (err) {
+    unstable_rethrow(err); // let redirect() and Next's internal signals through
+    console.error("[admin] dashboard failed to render:", err);
+    const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    return (
+      <div className="grid min-h-screen place-items-center p-6">
+        <div className="max-w-xl text-center text-sm">
+          <p className="font-semibold text-red-600">The admin dashboard failed to load.</p>
+          <pre className="mt-3 whitespace-pre-wrap break-words text-left text-red-600">{detail}</pre>
+        </div>
+      </div>
+    );
+  }
+}
+
+// Second line of defence after proxy.ts: the session is verified again here.
+async function GateInner({ children }: { children: ReactNode }) {
   const user = await verifySession((await cookies()).get(SESSION_COOKIE)?.value);
   if (!user) redirect("/admin/login");
 
