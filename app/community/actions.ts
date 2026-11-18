@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { SESSION_COOKIE, verifySession } from "@/lib/admin-session";
-import { firebaseAuth } from "@/lib/firebase-admin";
+import { createCustomToken } from "@/lib/firebase-admin";
 
 export type LobbyToken = { token: string } | { error: string } | null;
 
@@ -18,9 +18,9 @@ export async function getLobbyToken(): Promise<LobbyToken> {
   const user = await verifySession((await cookies()).get(SESSION_COOKIE)?.value);
   if (!user) return null;
   try {
-    const auth = await firebaseAuth();
-    if (!auth) return { error: "Firebase admin isn't configured (FIREBASE_* variables missing)." };
-    return { token: await auth.createCustomToken("site-admin", { admin: true }) };
+    const token = createCustomToken("site-admin", { admin: true });
+    if (!token) return { error: "Firebase admin isn't configured (FIREBASE_* variables missing)." };
+    return { token };
   } catch (e) {
     console.error("Couldn't mint the lobby admin token", e);
     return { error: e instanceof Error ? e.message : String(e) };

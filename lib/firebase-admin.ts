@@ -1,6 +1,6 @@
 import "server-only";
+import { createSign } from "node:crypto";
 import { cert, getApp, getApps, initializeApp, type App } from "firebase-admin/app";
-import type { Auth } from "firebase-admin/auth";
 import { getFirestore, initializeFirestore, type Firestore } from "firebase-admin/firestore";
 
 // Firestore is only ever touched from the server with a service account, so
@@ -40,13 +40,33 @@ export function firestore(): Firestore | null {
   return db;
 }
 
-/** Firebase Auth admin client (mints the lobby's admin sign-in token), or null when not configured. */
-// Loaded on demand: firebase-admin/auth pulls in jwks-rsa → jose (ESM-only), which
-// crashes on Node runtimes without require(esm). Importing it at the top made
-// every Firestore page fail on Vercel; now only the lobby token pays for it.
-export async function firebaseAuth(): Promise<Auth | null> {
-  const app = adminApp();
-  if (!app) return null;
-  const { getAuth } = await import("firebase-admin/auth");
-  return getAuth(app);
+const b64url = (v: string | Buffer) => Buffer.from(v).toString("base64url");
+
+/**
+ * Mints a Firebase custom token (for signInWithCustomToken) signed with the
+ * service account key, or null when the FIREBASE_* variables aren't set.
+ *
+ * Same JWT that firebase-admin/auth's createCustomToken() produces, but without
+ * that module: it pulls in jwks-rsa → jose (ESM-only), which fails to load with
+ * ERR_REQUIRE_ESM on Vercel's Node runtime.
+ * Format: https://firebase.google.com/docs/auth/admin/create-custom-tokens#create_custom_tokens_using_a_third-party_jwt_library
+ */
+export function createCustomToken(uid: string, claims: Record<string, unknown>): string | null {
+  const creds = credentials();
+  if (!creds) return null;
+  const now = Math.floor(Date.now() / 1000);
+  const header = b64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+  const payload = b64url(
+    JSON.stringify({
+      iss: creds.clientEmail,
+      sub: creds.clientEmail,
+      aud: "https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit",
+      iat: now,
+      exp: now + 60 * 60, // Firebase's maximum
+      uid,
+      claims,
+    }),
+  );
+  const signature = createSign("RSA-SHA256").update(`${header}.${payload}`).sign(creds.privateKey);
+  return `${header}.${payload}.${b64url(signature)}`;
 }
